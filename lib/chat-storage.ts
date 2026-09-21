@@ -116,6 +116,7 @@ export type ChatMessage = {
         | "red_packet" | "transfer" | "location"
         | "poke" | "sticker" | "quote" | "dice"
         | "voice_call" | "video_call"
+        | "meeting_invite"
         | "accept_red_packet" | "decline_red_packet" | "accept_transfer" | "decline_transfer"
         | "payment_request" | "accept_payment_request" | "decline_payment_request"
         | "music" | "music_share" | "music_notify" | "music_not_found"
@@ -218,6 +219,12 @@ export type ChatMessage = {
         memoryReason?: string;    // 记忆写入原因
         memoryImportance?: number;// 记忆写入重要性
         memoryRequestStatus?: "pending" | "approved" | "ignored";
+        /** 角色发起的线下见面邀请。 */
+        meetingInviteStatus?: "pending" | "accepted" | "declined";
+        meetingInviteCharacterId?: string;
+        meetingInviteCharacterName?: string;
+        meetingInviteResolvedAt?: string;
+        meetingInviteStorySessionId?: string;
         fileType?: "audio" | "image" | "video" | "file";
         fileName?: string;
         fileDuration?: number;

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  ArrowDownTrayIcon,
   PlusIcon,
   TrashIcon,
   XMarkIcon,
@@ -35,9 +36,14 @@ type StoryPaginationManagerProps = {
   onBranchCreate: (input: StoryBranchCreateInput) => void;
   onBranchDelete: (sessionIds: string[]) => void;
   onSessionUpdate: (sessionId: string, updates: Partial<StorySession>) => void;
+  onExportSession: (sessionId: string) => void;
+  onExportAll: () => void;
 };
 
-function AvatarCollage({ characters, large = false }: { characters: Character[]; large?: boolean }) {
+function AvatarCollage({ characters, large = false, customAvatar }: { characters: Character[]; large?: boolean; customAvatar?: string }) {
+  if (customAvatar) {
+    return <span className={`story-custom-avatar${large ? " is-large" : ""}`}><img src={customAvatar} alt="剧情头像" /></span>;
+  }
   const visible = characters.slice(0, 4);
   if (visible.length <= 1) {
     const character = visible[0];
@@ -201,7 +207,7 @@ export function StoryPaginationManager(props: StoryPaginationManagerProps) {
           </header>
           <main className="story-catalog-scroll">
             <section className="story-book-hero">
-              <div className="story-book-cover"><AvatarCollage characters={activeOwnerCharacters} large /></div>
+              <div className="story-book-cover"><AvatarCollage characters={activeOwnerCharacters} large customAvatar={mainSession?.storyAvatar} /></div>
               <div className="story-book-meta">
                 <h1>{title}</h1>
                 <p>共 {props.sessions.length} 节</p>
@@ -216,6 +222,16 @@ export function StoryPaginationManager(props: StoryPaginationManagerProps) {
                     if (event.key === "Enter") { event.preventDefault(); addTag(); }
                   }} /><PlusIcon width={12} /></label>
                 </div>
+                {mainSession ? (
+                  <label className="story-avatar-url-field">
+                    <span>剧情头像 / 图床 URL</span>
+                    <input
+                      value={mainSession.storyAvatar || ""}
+                      placeholder="https://...（留空使用角色头像）"
+                      onChange={(event) => props.onSessionUpdate(mainSession.id, { storyAvatar: event.target.value.trim() || undefined })}
+                    />
+                  </label>
+                ) : null}
               </div>
             </section>
 
@@ -223,6 +239,7 @@ export function StoryPaginationManager(props: StoryPaginationManagerProps) {
               <div className="story-directory-head">
                 <h2>目录</h2>
                 <div>
+                  <button type="button" onClick={props.onExportAll}><ArrowDownTrayIcon width={14} />导出全部</button>
                   <button type="button" onClick={() => setBranchModalOpen(true)}><PlusIcon width={14} />增加分线</button>
                   <button
                     type="button"
@@ -278,8 +295,10 @@ export function StoryPaginationManager(props: StoryPaginationManagerProps) {
                               session.inheritRecentMemory ? "已继承最近记忆" : "从创建时开始",
                             ].join(" · ")}
                           </small>
+                          <small className="story-directory-date">最近聊天：{session.lastMessageAt || session.lastMessageId ? new Date(session.lastMessageAt || session.updatedAt).toLocaleString() : "还没有聊天"}</small>
                         </span>
                       </div>
+                      <button type="button" className="story-branch-export" aria-label={`导出${session.branchName || "剧情"}`} onClick={() => props.onExportSession(session.id)}><ArrowDownTrayIcon width={14} /></button>
                       {!isMain && session.independentStory && !session.includedInMemoryAt ? (
                         <button type="button" className="story-branch-memory" onClick={() => {
                           if (window.confirm("结束这条独立剧情并把剧情摘要加入角色记忆？")) {
