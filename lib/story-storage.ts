@@ -11,6 +11,12 @@ export type StoryUiPrefs = {
   voiceEnabled?: boolean;
   /** 当前角色剧情页独立壁纸（data URL 或可访问 URL）。 */
   wallpaper?: string;
+  /** 当前剧情会话上传的字体文件（data URL）。 */
+  customFontDataUrl?: string;
+  /** 当前剧情会话使用的远程字体 URL。 */
+  customFontUrl?: string;
+  /** 上传字体的原始文件名，仅用于设置页展示。 */
+  customFontName?: string;
   /** 是否在剧情输入栏显示自动阅读控制。 */
   autoReadingEnabled?: boolean;
   /** 自动阅读滚动速度，单位为像素/秒。 */

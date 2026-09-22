@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
   BookOpenIcon,
@@ -575,6 +575,13 @@ export function StoryApp({ onClose }: StoryAppProps) {
   const storyDisplayName = activeGroup?.name || currentCharacter?.name || "剧情";
   const storyAvatar = ownerMainSession?.storyAvatar || currentCharacter?.avatar || "";
   const uiPrefs = currentSession?.uiPrefs || {};
+  const customFontSource = uiPrefs.customFontDataUrl || uiPrefs.customFontUrl || "";
+  const storyShellStyle = customFontSource
+    ? ({ "--story-font": '"StoryCustomFont", "Noto Serif SC", "Songti SC", serif' } as CSSProperties)
+    : undefined;
+  const customFontFace = customFontSource
+    ? `@font-face{font-family:"StoryCustomFont";src:url(${JSON.stringify(customFontSource)});font-display:swap;}`
+    : "";
   const storySettings: StoryCharacterSettings = currentSession?.settings || {};
   // 方案定义统一来自公用仓库（所有角色共享），角色设置里只有“启用哪一个”
   const schemeRepo: StorySchemeRepository = useMemo(
@@ -1892,7 +1899,8 @@ export function StoryApp({ onClose }: StoryAppProps) {
 
   if (settingsOpen) {
     return (
-      <div className={`story-app-shell story-session-${currentSession.id}`} data-story-theme={uiPrefs.theme || "paper"}>
+      <div className={`story-app-shell story-session-${currentSession.id}`} data-story-theme={uiPrefs.theme || "paper"} style={storyShellStyle}>
+        {customFontFace ? <style>{customFontFace}</style> : null}
         <StorySettingsPage
           characters={characters}
           activeCharacterId={activeCharacterId}
@@ -1953,6 +1961,7 @@ export function StoryApp({ onClose }: StoryAppProps) {
     <div
       className={`story-app-shell story-session-${currentSession.id}`}
       data-story-theme={uiPrefs.theme || "paper"}
+      style={storyShellStyle}
       onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX || 0)}
       onTouchMove={(event) => handleTouchMove(event.touches[0]?.clientX || 0)}
       onTouchEnd={handleTouchEnd}
@@ -1964,6 +1973,7 @@ export function StoryApp({ onClose }: StoryAppProps) {
       onMouseLeave={handleTouchEnd}
     >
       {/* Styles moved to styles/story.css */}
+      {customFontFace ? <style>{customFontFace}</style> : null}
       {uiPrefs.wallpaper ? <div className="story-wallpaper-layer" style={{ backgroundImage: `url(${uiPrefs.wallpaper})` }} /> : null}
       {currentSession.customCSS ? (
         <SessionCustomCSS css={currentSession.customCSS} scope={sessionScope} />
