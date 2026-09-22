@@ -350,7 +350,7 @@ export type StorySession = {
   independentStory?: boolean;
   /** 小说目录页展示的自定义标签，保存在该故事的主线会话上。 */
   catalogTags?: string[];
-  /** 剧情封面/头像，可填写图床 URL 或 data URL；通常保存在主线会话。 */
+  /** 从相册设置的剧情封面/头像（data URL）；通常保存在主线会话。 */
   storyAvatar?: string;
   /** 邀请或快捷新建后，首次进入时由角色自动开启剧情。 */
   autoStartPrompt?: string;

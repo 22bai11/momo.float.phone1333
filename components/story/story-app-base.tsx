@@ -1225,7 +1225,12 @@ export function StoryApp({ onClose }: StoryAppProps) {
       .trim();
   }
 
-  function buildStoryTxt(session: StorySession): string {
+  function storyChapterTitle(session: StorySession, branchIndex: number): string {
+    if ((session.branchId || "main") === "main") return "主线";
+    return `分线${branchIndex}「${session.branchName || `分线剧情 ${branchIndex}`}」`;
+  }
+
+  function buildStoryTxt(session: StorySession, chapterTitle: string, includeBookTitle = true): string {
     const rows = loadStoryMessages(session.id)
       .map((message) => {
         const content = cleanStoryTextForExport(message.renderedContent || message.rawContent);
@@ -1234,7 +1239,7 @@ export function StoryApp({ onClose }: StoryAppProps) {
         return `${speaker}\n${content}`;
       })
       .filter(Boolean);
-    return [`《${storyDisplayName}》`, session.branchName || "主线剧情", "", ...rows].join("\n\n");
+    return [includeBookTitle ? `《${storyDisplayName}》` : "", chapterTitle, "", ...rows].filter((item, index) => index !== 0 || Boolean(item)).join("\n\n");
   }
 
   function safeStoryFilename(value: string): string {
@@ -1244,14 +1249,25 @@ export function StoryApp({ onClose }: StoryAppProps) {
   function handleExportStorySession(sessionId: string) {
     const session = loadStorySessions().find((item) => item.id === sessionId);
     if (!session) return;
-    const blob = new Blob([buildStoryTxt(session)], { type: "text/plain;charset=utf-8" });
-    void downloadFile(blob, `${safeStoryFilename(storyDisplayName)}-${safeStoryFilename(session.branchName || "主线剧情")}.txt`)
+    const ownerSessions = loadStorySessionsForOwner(session.ownerType || "single", session.ownerId || session.characterId);
+    const branchIndex = Math.max(1, ownerSessions.filter((item) => (item.branchId || "main") !== "main").findIndex((item) => item.id === session.id) + 1);
+    const chapterTitle = storyChapterTitle(session, branchIndex);
+    const blob = new Blob([buildStoryTxt(session, chapterTitle)], { type: "text/plain;charset=utf-8" });
+    void downloadFile(blob, `${safeStoryFilename(storyDisplayName)}-${safeStoryFilename(chapterTitle)}.txt`)
       .catch((error) => alert(error instanceof Error ? error.message : "导出失败"));
   }
 
   function handleExportAllStories() {
-    const sections = loadStorySessionsForOwner(activeOwnerType, activeOwnerId).map(buildStoryTxt);
-    const blob = new Blob([sections.join("\n\n\n====================\n\n\n")], { type: "text/plain;charset=utf-8" });
+    const sessions = loadStorySessionsForOwner(activeOwnerType, activeOwnerId);
+    let branchIndex = 0;
+    const chapters = sessions.map((session) => {
+      if ((session.branchId || "main") !== "main") branchIndex += 1;
+      return { session, title: storyChapterTitle(session, Math.max(1, branchIndex)) };
+    });
+    const directory = ["目录", ...chapters.map((chapter) => chapter.title)].join("\n");
+    const sections = chapters.map((chapter) => buildStoryTxt(chapter.session, chapter.title, false));
+    const text = [`《${storyDisplayName}》`, directory, ...sections].join("\n\n\n====================\n\n\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     void downloadFile(blob, `${safeStoryFilename(storyDisplayName)}-全部剧情.txt`)
       .catch((error) => alert(error instanceof Error ? error.message : "导出失败"));
   }
@@ -2243,7 +2259,7 @@ export function StoryApp({ onClose }: StoryAppProps) {
             <p className="story-quick-story-question">是否结束当前剧情，快捷进入新剧情？</p>
             <p className="story-settings-note">新分线会按当前时间自动命名，之后可在剧情目录中修改。</p>
             <label className="story-settings-toggle-row">
-              <span><strong>独立剧情分线</strong><small>不继承主线上下文，防止剧情串台</small></span>
+              <span><strong>独立剧情分线</strong></span>
               <input type="checkbox" checked={quickStoryIndependent} onChange={(event) => setQuickStoryIndependent(event.target.checked)} />
             </label>
             <footer><button type="button" onClick={() => setQuickStoryOpen(false)}>取消</button><button type="button" className="story-settings-primary" onClick={handleQuickStoryCreate}>结束并新建</button></footer>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { findCustomStickerByName, resolveCustomStickerUrl } from "@/lib/custom-sticker-storage";
 import { isMediaStoreRef, loadMediaObjectUrl } from "@/lib/media-cache-storage";
 import { getChatImageFromIndexedDB } from "@/lib/chat-asset-storage";
-import { ChatMessage, createOrGetSession, updateMessageMediaStatus, updateMessageMediaData } from "@/lib/chat-storage";
+import { ChatMessage, createOrGetSession, loadChatAppSettings, resolveMeetingInviteCardConfig, updateMessageMediaStatus, updateMessageMediaData } from "@/lib/chat-storage";
 import { resolveContactCard } from "@/lib/contact-card";
 import { loadCharacters } from "@/lib/character-storage";
 import { CHAT_OPEN_SESSION_EVENT, dispatchOpenAddContact } from "@/lib/chat-notification-events";
@@ -30,6 +30,7 @@ import { payWithWalletBalance } from "@/lib/wallet-storage";
 import { formatShoppingPaymentRequestHistory } from "@/lib/shopping-payment-request";
 import { toCustomAppIconId } from "@/lib/custom-app-types";
 import { ChatPluginSlot } from "@/components/chat/chat-plugin-slot";
+import { CustomStatusFrame } from "@/components/chat/custom-status-frame";
 import { CHAT_PLUGIN_SLOTS_CHANGED_EVENT, getChatPluginRuntime } from "@/lib/chat-plugin-runtime";
 
 interface MessageBubbleProps {
@@ -180,6 +181,27 @@ function MeetingInviteBubble({
 }) {
     const status = msg.mediaData?.meetingInviteStatus || "pending";
     const resolvedLabel = status === "accepted" ? "已同意，正在进入见面剧情" : "已选择不见面";
+    const config = resolveMeetingInviteCardConfig(loadChatAppSettings());
+    const inviter = msg.mediaData?.meetingInviteCharacterName || charName || "他";
+    const raw = [
+        `邀请人=${inviter}`,
+        `标题=${inviter}想邀请你见面，是否同意？`,
+        "说明=同意后会自动建立新的剧情分线，并从这次见面开始。",
+        `状态=${status}`,
+    ].join("\n");
+    if (config.mode === "custom" && config.renderHtml.trim()) {
+        return (
+            <section className="meeting-invite-custom-card" style={{ width: 250, maxWidth: "72vw" }}>
+                <CustomStatusFrame
+                    html={config.renderHtml}
+                    raw={raw}
+                    kind="meeting"
+                    title="邀请见面卡片"
+                    onAction={(action) => onAction?.(msg, action)}
+                />
+            </section>
+        );
+    }
     return (
         <section className="meeting-invite-card" data-status={status}>
             <style>{`.meeting-invite-card{width:250px;max-width:72vw;padding:16px;border-radius:16px;background:linear-gradient(145deg,#fffaf2,#fff);border:1px solid rgba(160,120,76,.18);box-shadow:0 8px 24px rgba(82,58,34,.10);color:#47382d}.meeting-invite-eyebrow{font-size:11px;letter-spacing:.16em;opacity:.56;margin-bottom:8px}.meeting-invite-title{display:block;font-size:15px;line-height:1.45}.meeting-invite-desc{margin:7px 0 14px;font-size:12px;opacity:.65}.meeting-invite-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meeting-invite-actions button{border-radius:10px;padding:9px 8px}.meeting-invite-decline{border:1px solid rgba(71,56,45,.16);background:rgba(255,255,255,.72);color:inherit}.meeting-invite-accept{border:0;background:#4b4038;color:#fff}.meeting-invite-result{padding-top:3px;font-size:12px;opacity:.72}`}</style>
